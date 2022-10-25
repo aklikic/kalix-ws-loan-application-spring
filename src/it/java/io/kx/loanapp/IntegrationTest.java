@@ -1,14 +1,14 @@
 package io.kx.loanapp;
 
-import io.grpc.Status;
-import io.kx.loanapp.Main;
+import io.kx.Main;
 import io.kx.loanapp.api.LoanAppApi;
 import io.kx.loanapp.domain.LoanAppDomainStatus;
 import kalix.springsdk.testkit.KalixIntegrationTestKitSupport;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -18,7 +18,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest(classes = Main.class)
 public class IntegrationTest extends KalixIntegrationTestKitSupport {
 
+  private static Logger logger = LoggerFactory.getLogger(IntegrationTest.class);
   @Autowired
   private WebClient webClient;
 
@@ -50,6 +50,8 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
             5000,
             2000,
             36);
+
+    logger.info("Sending submit...");
     ResponseEntity<LoanAppApi.EmptyResponse> emptyRes =
     webClient.post()
             .uri("/loanapp/"+loanAppId+"/submit")
@@ -60,15 +62,17 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
 
     assertEquals(HttpStatus.OK,emptyRes.getStatusCode());
 
+    logger.info("Sending get...");
     LoanAppApi.GetResponse getRes =
     webClient.get()
-            .uri("/loanapp/"+loanAppId+"/get")
+            .uri("/loanapp/"+loanAppId)
             .retrieve()
             .bodyToMono(LoanAppApi.GetResponse.class)
             .block(timeout);
 
     assertEquals(LoanAppDomainStatus.STATUS_IN_REVIEW,getRes.state().status());
 
+    logger.info("Sending approve...");
     emptyRes =
     webClient.post()
             .uri("/loanapp/"+loanAppId+"/approve")
@@ -77,9 +81,10 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
             .toEntity(LoanAppApi.EmptyResponse.class)
             .block(timeout);
 
+    logger.info("Sending get...");
     getRes =
     webClient.get()
-            .uri("/loanapp/"+loanAppId+"/get")
+            .uri("/loanapp/"+loanAppId)
             .retrieve()
             .bodyToMono(LoanAppApi.GetResponse.class)
             .block(timeout);

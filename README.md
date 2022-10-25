@@ -27,9 +27,9 @@ Define value for property 'package' io.kx: : `io.kx.loanapp`<br>
 ## Import generated project in your IDE/editor
 
 ## Update main class
-Move `io.kx.loanapp.Main` to `io.kx` package. <br>
+Move `io.kx.Main` to `io.kx` package. <br>
 In `pom.xml`:
-1. In `<mainClass>io.kx.loanapp.Main</mainClass>` replace `io.kx.loanapp.Main` with `io.kx.Main`
+1. In `<mainClass>io.kx.Main</mainClass>` replace `io.kx.Main` with `io.kx.Main`
 2. In `<dockerImage>my-docker-repo/${project.artifactId}</dockerImage>` replace `my-docker-repo` with the right `dockerId`
 
 

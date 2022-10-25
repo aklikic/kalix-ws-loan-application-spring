@@ -14,7 +14,7 @@
     <dockerImage>aklikic/${project.artifactId}</dockerImage>
     <dockerTag>${project.version}-${build.timestamp}</dockerTag>
     <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
-    <mainClass>io.kx.loanapp.Main</mainClass>
+    <mainClass>io.kx.Main</mainClass>
 
     <jdk.target>17</jdk.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -91,7 +91,7 @@
               <name>${dockerImage}:%l</name>
               <build>
                 <!-- Base Docker image which contains jre-->
-                <from>docker.io/library/eclipse-temurin:${D}{jdk.target}-alpine</from>
+                <from>docker.io/library/eclipse-temurin:${jdk.target}-alpine</from>
                 <createImageOptions>
                   <platform>linux/amd64</platform>
                 </createImageOptions>
