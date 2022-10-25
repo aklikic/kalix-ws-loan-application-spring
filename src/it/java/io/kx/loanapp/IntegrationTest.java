@@ -45,7 +45,6 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
   public void test() throws Exception {
     var loanAppId = "11";
     var submitRequest = new LoanAppApi.SubmitRequest(
-            loanAppId,
             "clientId",
             5000,
             2000,
@@ -76,7 +75,7 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
     emptyRes =
     webClient.post()
             .uri("/loanapp/"+loanAppId+"/approve")
-            .bodyValue(new LoanAppApi.ApproveRequest(loanAppId))
+            .bodyValue(new LoanAppApi.ApproveRequest())
             .retrieve()
             .toEntity(LoanAppApi.EmptyResponse.class)
             .block(timeout);
