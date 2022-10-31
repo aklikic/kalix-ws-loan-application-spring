@@ -5,6 +5,7 @@ import io.kx.loanproc.api.LoanProcApi;
 import io.kx.loanproc.domain.LoanProcDomainStatus;
 import io.kx.loanproc.api.LoanProcApi;
 import io.kx.loanproc.domain.LoanProcDomainStatus;
+import io.kx.loanproc.view.LoanProcViewModel;
 import kalix.springsdk.testkit.KalixIntegrationTestKitSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -66,6 +67,22 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
             .block(timeout);
 
     assertEquals(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW, getRes.state().status());
+
+    logger.info("Checking view...");
+//    LoanProcViewModel.ViewResponse viewRes =
+//    webClient.post()
+//            .uri("/loanproc/views/by-status")
+//            .bodyValue(new LoanProcViewModel.ViewRequest(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name()))
+//            .retrieve()
+//            .bodyToMono(LoanProcViewModel.ViewResponse.class)
+//            .block(timeout);
+
+//    LoanProcViewModel.ViewRecord viewRes =
+//            webClient.post()
+//                    .uri("/loanproc/views/by-status/"+LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name())
+//                    .retrieve()
+//                    .bodyToMono(LoanProcViewModel.ViewRecord.class)
+//                    .block(timeout);
 
     logger.info("Sending approve...");
     emptyRes =
