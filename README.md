@@ -168,3 +168,96 @@ Approve:
 ```
 curl -XPOST https://<somehost>.kalix.app/loanapp/1/approve -H "Content-Type: application/json"
 ```
+
+
+# Loan application processing service
+## Create loan application processing packages
+Create package `io.kx.loanproc` in `main`, `test` and `it`<br>
+
+## Define persistence (domain) data structure  (GRPC)
+1. Create package `io.kx.loanproc.doman`<br>
+2. Create Java interface `LoanProcDomainEvent` and add Java records for events `ReadyForReview`, `Approved`, `Declined`
+3. Create `LoanProcDomainStatus` enum
+4. Create file `LoanProcDomainState` with `empty`, `onReadyForReview`, `onApproved` and `onDeclined` methods
+   <i><b>Tip</b></i>: Check content in `step-2` git branch
+
+## Define API data structure and endpoints (GRPC)
+1. Create package `io.kx.loanproc.api`<br>
+2. Create sealed interface `LoanProcApi` and add Java records for requests and responses
+3. Create class `LoanProcService` extending `EventSourcedEntity<LoanProcDomainState>`
+   1. add class level annotations `@Entity(entityKey = "loanAppId", entityType = "loanproc")` (event sourcing entity configuration)  & `@RequestMapping("/loanproc/{loanAppId}")` (path prefix)
+   2. Override `emptyState` and return `LoanProcDomainState.empty()`, set loanAppId via `EventSourcedEntityContext` injected through the constructor
+   3. Implement each request method and event handlers
+      <i><b>Tip</b></i>: Check content in `step-2` git branch
+
+
+## Implement unit test
+1. Create  `src/test/java` <br>
+2. Create  `io.kx.loanproc.LoanProcServiceTest` class<br>
+3. Create `happyPath`
+   <i><b>Tip</b></i>: Check content in `step-2` git branch
+
+## Run unit test
+```
+mvn test
+```
+## Implement integration test
+1. Edit `io.kx.loanproc.IntegrationTest` class<br>
+2.
+<i><b>Tip</b></i>: Check content in `step-2` git branch
+
+## Run integration test
+```
+mvn -Pit verify
+```
+
+<i><b>Note</b></i>: Integration tests uses [TestContainers](https://www.testcontainers.org/) to span integration environment so it could require some time to download required containers.
+Also make sure docker is running.
+
+## Run locally
+
+In project root folder there is `docker-compose.yaml` for running `kalix proxy` and (optionally) `google pubsub emulator`.
+<i><b>Tip</b></i>: If you do not require google pubsub emulator then comment it out in `docker-compose.yaml`
+```
+docker-compose up
+```
+
+Start the service:
+
+```
+mvn exec:exec
+```
+## Test service locally
+Start processing:
+```
+curl -XPOST http://localhost:9000/loanproc/1/process -H "Content-Type: application/json"
+```
+
+Get loan processing:
+```
+curl -XGET http://localhost:9000/loanproc/1 -H "Content-Type: application/json"
+```
+
+Approve:
+```
+curl -XPOST -d '{"reviewerId":"9999"}' http://localhost:9000/loanproc/1/approve -H "Content-Type: application/json"
+```
+## Package & Deploy
+```
+mvn deploy
+```
+## Test service in production
+Start processing:
+```
+curl -XPOST https://<somehost>.kalix.app/loanproc/1/process -H "Content-Type: application/json"
+```
+
+Get loan processing:
+```
+curl -XGET https://<somehost>.kalix.app/loanproc/1 -H "Content-Type: application/json"
+```
+
+Approve:
+```
+curl -XPOST -d '{"reviewerId":"9999"}' https://<somehost>.kalix.app/loanproc/1/approve -H "Content-Type: application/json"
+```
