@@ -75,7 +75,6 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
     emptyRes =
     webClient.post()
             .uri("/loanapp/"+loanAppId+"/approve")
-            .bodyValue(new LoanAppApi.ApproveRequest())
             .retrieve()
             .toEntity(LoanAppApi.EmptyResponse.class)
             .block(timeout);

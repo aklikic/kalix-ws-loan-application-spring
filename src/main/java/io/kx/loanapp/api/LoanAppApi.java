@@ -7,8 +7,6 @@ public sealed interface LoanAppApi {
                          Integer clientMonthlyIncomeCents,
                          Integer loanAmountCents,
                          Integer loanDurationMonths) implements LoanAppApi{}
-
-    record ApproveRequest() implements LoanAppApi{}
     record DeclineRequest(String reason) implements LoanAppApi{}
 
     record EmptyResponse()implements LoanAppApi{

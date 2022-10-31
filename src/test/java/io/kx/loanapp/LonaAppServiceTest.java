@@ -32,7 +32,7 @@ public class LonaAppServiceTest {
         LoanAppDomainState updatedStat = (LoanAppDomainState)submitResult.getUpdatedState();
         assertEquals(LoanAppDomainStatus.STATUS_IN_REVIEW,updatedStat.status());
 
-        EventSourcedResult<LoanAppApi.EmptyResponse> approveResponse = testKit.call(service -> service.approve(new LoanAppApi.ApproveRequest()));
+        EventSourcedResult<LoanAppApi.EmptyResponse> approveResponse = testKit.call(service -> service.approve());
         LoanAppDomainEvent.Approved approvedEvent = approveResponse.getNextEventOfType(LoanAppDomainEvent.Approved.class);
         assertEquals(loanAppId,approvedEvent.loanAppId());
 

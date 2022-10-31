@@ -54,7 +54,7 @@ public class LoanAppService extends EventSourcedEntity<LoanAppDomainState> {
     }
 
     @PostMapping("/approve")
-    public Effect<LoanAppApi.EmptyResponse> approve(@RequestBody LoanAppApi.ApproveRequest request){
+    public Effect<LoanAppApi.EmptyResponse> approve(){
         switch (currentState().status()){
             case STATUS_UNKNOWN:
                 return effects().error("Not found", Status.Code.NOT_FOUND);
