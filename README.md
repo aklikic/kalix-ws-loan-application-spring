@@ -285,4 +285,51 @@ mvn -Pit verify
 mvn deploy
 ```
 ## Test service in production
+```
 curl -XPOST -d {"statusId":"STATUS_READY_FOR_REVIEW"} https://<somehost>.kalix.app/loanproc/views/by-status -H "Content-Type: application/json"
+```
+
+# Event driven communication
+## Action for submitted event (Loan application service -> Loan application processing service)
+1. Create package `io.kx.loanapp.action`
+2. Create `io.kx.loanapp.LoanAppToLoanProcEventingAction` class extending `Action`
+<i><b>Tip</b></i>: Check content in `step-4` git branch
+## Action for approved & declined processing event (Loan application processing service -> Loan application service)
+1. Create package `io.kx.loanproc.action`
+2. Create `io.kx.loanproc.LoanProcToLoanAppEventingAction` class extending `Action`
+<i><b>Tip</b></i>: Check content in `step-4` git branch
+
+## Create integration tests for eventing (end-to-end test)
+Update `io.kx.IntegrationTest` and add `endToEndHappyPath` test
+<i><b>Tip</b></i>: Check content in `step-4` git branch
+## Run integration test
+```
+mvn -Pit verify
+```
+## Package & Deploy
+```
+mvn deploy
+```
+## Test service in production
+
+Submit loan application:
+```
+`curl -XPOST -d '{
+  "clientId": "12345",
+  "clientMonthlyIncomeCents": 60000,
+  "loanAmountCents": 20000,
+  "loanDurationMonths": 12
+}' https://<somehost>.kalix.app/loanapp/3/submit -H "Content-Type: application/json"`
+```
+Check loan processing status:
+```
+curl -XPOST -d {"statusId":"STATUS_READY_FOR_REVIEW"} https://<somehost>.kalix.app/loanproc/views/by-status -H "Content-Type: application/json"
+```
+Approve loan processing:
+```
+curl -XPOST -d '{"reviewerId":"9999"}' https://<somehost>.kalix.app/loanproc/3/approve -H "Content-Type: application/json"
+```
+Get loan application:
+```
+curl -XGET https://<somehost>.kalix.app/loanapp/3 -H "Content-Type: application/json"
+```
