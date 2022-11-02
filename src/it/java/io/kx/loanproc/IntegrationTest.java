@@ -16,7 +16,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -68,21 +70,18 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
 
     assertEquals(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW, getRes.state().status());
 
+    //views are eventually consistent
+    Thread.sleep(2000);
     logger.info("Checking view...");
-//    LoanProcViewModel.ViewResponse viewRes =
-//    webClient.post()
-//            .uri("/loanproc/views/by-status")
-//            .bodyValue(new LoanProcViewModel.ViewRequest(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name()))
-//            .retrieve()
-//            .bodyToMono(LoanProcViewModel.ViewResponse.class)
-//            .block(timeout);
+    LoanProcViewModel.ViewRecord viewRes =
+    webClient.post()
+            .uri("/loanproc/views/by-status")
+            .bodyValue(new LoanProcViewModel.ViewRequest(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name()))
+            .retrieve()
+            .bodyToMono(LoanProcViewModel.ViewRecord.class)
+            .block(timeout);
 
-//    LoanProcViewModel.ViewRecord viewRes =
-//            webClient.post()
-//                    .uri("/loanproc/views/by-status/"+LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name())
-//                    .retrieve()
-//                    .bodyToMono(LoanProcViewModel.ViewRecord.class)
-//                    .block(timeout);
+    assertEquals(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name(),viewRes.statusId());
 
     logger.info("Sending approve...");
     emptyRes =
@@ -104,5 +103,13 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
     assertEquals(LoanProcDomainStatus.STATUS_APPROVED,getRes.state().status());
 
 
+    ClientResponse emptyViewRes =
+    webClient.post()
+            .uri("/loanproc/views/by-status")
+            .bodyValue(new LoanProcViewModel.ViewRequest(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name()))
+            .exchangeToMono(Mono::just)
+            .block(timeout);
+
+    assertEquals(HttpStatus.NOT_FOUND,emptyViewRes.statusCode());
   }
 }
