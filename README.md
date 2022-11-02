@@ -261,3 +261,28 @@ Approve:
 ```
 curl -XPOST -d '{"reviewerId":"9999"}' https://<somehost>.kalix.app/loanproc/1/approve -H "Content-Type: application/json"
 ```
+
+## Create a view
+1. Create package `io.kx.loanproc.view`
+2. Create `io.kx.loanproc.view.LoanProcViewModel` interface with Java records with `ViewRecord`
+3. Create `io.kx.loanproc.viewLoanProcByStatusView` class extending `View`
+   
+<i><b>Tip</b></i>: Check content in `step-3` git branch
+
+##Unit test
+Because of the nature of views only Integration tests are done.
+
+## Create integration tests for view
+Update `io.kx.loanproc.IntegrationTest` class with `webclient` query of the view endpoint
+<i><b>Tip</b></i>: Check content in `step-3` git branch
+
+## Run integration test
+```
+mvn -Pit verify
+```
+## Package & Deploy
+```
+mvn deploy
+```
+## Test service in production
+curl -XPOST -d {"statusId":"STATUS_READY_FOR_REVIEW"} https://<somehost>.kalix.app/loanproc/views/by-status -H "Content-Type: application/json"

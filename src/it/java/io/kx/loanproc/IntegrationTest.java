@@ -5,6 +5,7 @@ import io.kx.loanproc.api.LoanProcApi;
 import io.kx.loanproc.domain.LoanProcDomainStatus;
 import io.kx.loanproc.api.LoanProcApi;
 import io.kx.loanproc.domain.LoanProcDomainStatus;
+import io.kx.loanproc.view.LoanProcViewModel;
 import kalix.springsdk.testkit.KalixIntegrationTestKitSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -15,7 +16,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -67,6 +70,19 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
 
     assertEquals(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW, getRes.state().status());
 
+    //views are eventually consistent
+    Thread.sleep(2000);
+    logger.info("Checking view...");
+    LoanProcViewModel.ViewRecord viewRes =
+    webClient.post()
+            .uri("/loanproc/views/by-status")
+            .bodyValue(new LoanProcViewModel.ViewRequest(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name()))
+            .retrieve()
+            .bodyToMono(LoanProcViewModel.ViewRecord.class)
+            .block(timeout);
+
+    assertEquals(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name(),viewRes.statusId());
+
     logger.info("Sending approve...");
     emptyRes =
     webClient.post()
@@ -87,5 +103,13 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
     assertEquals(LoanProcDomainStatus.STATUS_APPROVED,getRes.state().status());
 
 
+    ClientResponse emptyViewRes =
+    webClient.post()
+            .uri("/loanproc/views/by-status")
+            .bodyValue(new LoanProcViewModel.ViewRequest(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name()))
+            .exchangeToMono(Mono::just)
+            .block(timeout);
+
+    assertEquals(HttpStatus.NOT_FOUND,emptyViewRes.statusCode());
   }
 }
