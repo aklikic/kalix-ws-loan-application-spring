@@ -8,21 +8,23 @@ import io.kx.loanproc.api.LoanProcService;
 import io.kx.loanproc.domain.LoanProcDomainEvent;
 import kalix.javasdk.action.Action;
 import kalix.javasdk.action.ActionCreationContext;
+import kalix.springsdk.KalixClient;
 import kalix.springsdk.annotations.Subscribe;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class LoanProcToLoanAppEventingAction extends Action {
 
     private final ActionCreationContext ctx;
-    private final WebClient webClient;
+    private final KalixClient kalixClient;
 
     @Autowired
-    public LoanProcToLoanAppEventingAction(ActionCreationContext ctx, WebClient webClient) {
+    public LoanProcToLoanAppEventingAction(ActionCreationContext ctx, KalixClient kalixClient) {
         this.ctx = ctx;
-        this.webClient = webClient;
+        this.kalixClient = kalixClient;
     }
 
     @Subscribe.EventSourcedEntity(LoanProcService.class)
@@ -32,24 +34,18 @@ public class LoanProcToLoanAppEventingAction extends Action {
 
     @Subscribe.EventSourcedEntity(LoanProcService.class)
     public Effect<LoanProcApi.EmptyResponse> onApproved(LoanProcDomainEvent.Approved event){
-        CompletableFuture<LoanProcApi.EmptyResponse> processRes =
-        webClient.post().uri("/loanapp/"+event.loanAppId()+"/approve")
-                .retrieve()
-                .bodyToMono(LoanAppApi.EmptyResponse.class)
-                .map(res -> LoanProcApi.EmptyResponse.of())
-                .toFuture();
+        CompletionStage<LoanProcApi.EmptyResponse> processRes =
+                kalixClient.post("/loanapp/"+event.loanAppId()+"/approve","",LoanAppApi.EmptyResponse.class).execute()
+                        .thenApply(res -> LoanProcApi.EmptyResponse.of());
 
         return effects().asyncReply(processRes);
     }
 
     @Subscribe.EventSourcedEntity(LoanProcService.class)
     public Effect<LoanProcApi.EmptyResponse> onDeclined(LoanProcDomainEvent.Declined event){
-        CompletableFuture<LoanProcApi.EmptyResponse> processRes =
-                webClient.post().uri("/loanapp/"+event.loanAppId()+"/decline")
-                        .retrieve()
-                        .bodyToMono(LoanAppApi.EmptyResponse.class)
-                        .map(res -> LoanProcApi.EmptyResponse.of())
-                        .toFuture();
+        CompletionStage<LoanProcApi.EmptyResponse> processRes =
+                kalixClient.post("/loanapp/"+event.loanAppId()+"/decline","",LoanAppApi.EmptyResponse.class).execute()
+                        .thenApply(res -> LoanProcApi.EmptyResponse.of());
 
         return effects().asyncReply(processRes);
     }

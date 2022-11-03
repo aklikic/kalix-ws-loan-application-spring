@@ -13,26 +13,23 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class LoanAppToLoanProcEventingAction extends Action {
 
     private final ActionCreationContext ctx;
-    private final WebClient webClient;
+    private final KalixClient kalixClient;
 
-    @Autowired
-    public LoanAppToLoanProcEventingAction(ActionCreationContext ctx, WebClient webClient) {
+    public LoanAppToLoanProcEventingAction(ActionCreationContext ctx, KalixClient kalixClient) {
         this.ctx = ctx;
-        this.webClient = webClient;
+        this.kalixClient = kalixClient;
     }
 
     @Subscribe.EventSourcedEntity(LoanAppService.class)
     public Action.Effect<LoanAppApi.EmptyResponse> onSubmitted(LoanAppDomainEvent.Submitted event){
-        CompletableFuture<LoanAppApi.EmptyResponse> processRes =
-        webClient.post().uri("/loanproc/"+event.loanAppId()+"/process")
-                .retrieve()
-                .bodyToMono(LoanProcApi.EmptyResponse.class)
-                .map(res -> LoanAppApi.EmptyResponse.of())
-                .toFuture();
+        CompletionStage<LoanAppApi.EmptyResponse> processRes =
+                kalixClient.post("/loanproc/"+event.loanAppId()+"/process","",LoanProcApi.EmptyResponse.class).execute()
+                        .thenApply(res -> LoanAppApi.EmptyResponse.of());
 
         return effects().asyncReply(processRes);
     }
