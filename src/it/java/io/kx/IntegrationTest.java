@@ -21,6 +21,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -35,7 +36,7 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
 
     @Test
     public void loanAppHappyPath() throws Exception {
-        var loanAppId = "11";
+        var loanAppId = UUID.randomUUID().toString();
         var submitRequest = new LoanAppApi.SubmitRequest(
                 "clientId",
                 5000,
@@ -86,7 +87,7 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
 
     @Test
     public void loanProcHappyPath() throws Exception {
-        var loanAppId = "11";
+        var loanAppId = UUID.randomUUID().toString();
         var reviewerId = "99999";
 
         logger.info("Sending process...");
@@ -155,7 +156,7 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
 
     @Test
     public void endToEndHappyPath() throws Exception {
-        var loanAppId = "11";
+        var loanAppId = UUID.randomUUID().toString();
         var reviewerId = "99999";
         var submitRequest = new LoanAppApi.SubmitRequest(
                 "clientId",
