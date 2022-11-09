@@ -24,12 +24,6 @@ public class LoanProcToLoanAppEventingAction extends Action {
         this.kalixClient = kalixClient;
     }
 
-//    @Subscribe.EventSourcedEntity(LoanProcService.class)
-//    public Effect<LoanProcApi.EmptyResponse> onApproved(LoanProcDomainEvent.ReadyForReview event){
-//        return effects().reply(LoanProcApi.EmptyResponse.of());
-//    }
-
-//    @Subscribe.EventSourcedEntity(LoanProcService.class)
     public Effect<LoanProcApi.EmptyResponse> onApproved(LoanProcDomainEvent.Approved event){
         CompletionStage<LoanProcApi.EmptyResponse> processRes =
                 kalixClient.post("/loanapp/"+event.loanAppId()+"/approve",LoanAppApi.EmptyResponse.class).execute()
@@ -38,10 +32,9 @@ public class LoanProcToLoanAppEventingAction extends Action {
         return effects().asyncReply(processRes);
     }
 
-//    @Subscribe.EventSourcedEntity(LoanProcService.class)
     public Effect<LoanProcApi.EmptyResponse> onDeclined(LoanProcDomainEvent.Declined event){
         CompletionStage<LoanProcApi.EmptyResponse> processRes =
-                kalixClient.post("/loanapp/"+event.loanAppId()+"/decline",LoanAppApi.EmptyResponse.class).execute()
+                kalixClient.post("/loanapp/"+event.loanAppId()+"/decline",new LoanAppApi.DeclineRequest(event.reason()),LoanAppApi.EmptyResponse.class).execute()
                         .thenApply(res -> LoanProcApi.EmptyResponse.of());
 
         return effects().asyncReply(processRes);

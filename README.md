@@ -292,11 +292,11 @@ curl -XPOST -d {"statusId":"STATUS_READY_FOR_REVIEW"} https://<somehost>.kalix.a
 # Event driven communication
 ## Action for submitted event (Loan application service -> Loan application processing service)
 1. Create package `io.kx.loanapp.action`
-2. Create `io.kx.loanapp.LoanAppToLoanProcEventingAction` class extending `Action`
+2. Create `io.kx.loanapp.action.LoanAppToLoanProcEventingAction` class extending `Action`
 <i><b>Tip</b></i>: Check content in `step-4` git branch
 ## Action for approved & declined processing event (Loan application processing service -> Loan application service)
 1. Create package `io.kx.loanproc.action`
-2. Create `io.kx.loanproc.LoanProcToLoanAppEventingAction` class extending `Action`
+2. Create `io.kx.loanproc.action.LoanProcToLoanAppEventingAction` class extending `Action`
 <i><b>Tip</b></i>: Check content in `step-4` git branch
 
 ## Create integration tests for eventing (end-to-end test)
@@ -332,4 +332,21 @@ curl -XPOST -d '{"reviewerId":"9999"}' https://<somehost>.kalix.app/loanproc/3/a
 Get loan application:
 ```
 curl -XGET https://<somehost>.kalix.app/loanapp/3 -H "Content-Type: application/json"
+```
+
+# Triggers
+##Action for managing trigger
+1. Create package `io.kx.loanproc.trigger`
+2. Create `io.kx.loanproc.trigger.LoanProcTimeoutTriggerAction` class extending `Action`
+<i><b>Tip</b></i>: Check content in `step-5` git branch
+# Create integration tests for eventing (end-to-end test)
+Update `io.kx.IntegrationTest` and add `endToEndProcessingDeclinedByTimeout` test
+<i><b>Tip</b></i>: Check content in `step-5` git branch
+## Run integration test
+```
+mvn -Pit verify
+```
+## Package & Deploy
+```
+mvn deploy
 ```
