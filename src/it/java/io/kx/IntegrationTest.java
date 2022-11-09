@@ -4,6 +4,7 @@ import io.kx.loanapp.api.LoanAppApi;
 import io.kx.loanapp.domain.LoanAppDomainStatus;
 import io.kx.loanproc.api.LoanProcApi;
 import io.kx.loanproc.domain.LoanProcDomainStatus;
+import io.kx.loanproc.trigger.LoanProcTimeoutTriggerAction;
 import io.kx.loanproc.view.LoanProcViewModel;
 import kalix.springsdk.testkit.KalixIntegrationTestKitSupport;
 import org.junit.jupiter.api.Test;
@@ -199,6 +200,7 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
                         .toEntity(LoanProcApi.EmptyResponse.class)
                         .block(timeout);
 
+        //eventing is eventually consistent
         Thread.sleep(2000);
 
         logger.info("Sending get on loan app...");
@@ -210,6 +212,61 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
                         .block(timeout);
 
         assertEquals(LoanAppDomainStatus.STATUS_APPROVED,getRes.state().status());
+
+
+    }
+
+    @Test
+    public void endToEndProcessingDeclinedByTimeout() throws Exception {
+        var loanAppId = UUID.randomUUID().toString();
+        var reviewerId = "99999";
+        var submitRequest = new LoanAppApi.SubmitRequest(
+                "clientId",
+                5000,
+                2000,
+                36);
+
+        logger.info("Sending loan app submit...");
+        ResponseEntity<LoanAppApi.EmptyResponse> emptyLaRes =
+                webClient.post()
+                        .uri("/loanapp/"+loanAppId+"/submit")
+                        .bodyValue(submitRequest)
+                        .retrieve()
+                        .toEntity(LoanAppApi.EmptyResponse.class)
+                        .block(timeout);
+
+        assertEquals(HttpStatus.OK,emptyLaRes.getStatusCode());
+
+
+        //views are eventually consistent
+        Thread.sleep(2000);
+        logger.info("Checking loan proc view for STATUS_READY_FOR_REVIEW...");
+        LoanProcViewModel.ViewRecord viewLpRes =
+                webClient.post()
+                        .uri("/loanproc/views/by-status")
+                        .bodyValue(new LoanProcViewModel.ViewRequest(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name()))
+                        .retrieve()
+                        .bodyToMono(LoanProcViewModel.ViewRecord.class)
+                        .block(timeout);
+
+        assertEquals(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name(),viewLpRes.statusId());
+
+
+        //Waiting for timeout and decline
+        Thread.sleep(LoanProcTimeoutTriggerAction.defaultTimeoutMillis);
+
+        //eventing is eventually consistent
+        Thread.sleep(4000);
+
+        logger.info("Sending get on loan app...");
+        LoanAppApi.GetResponse getRes =
+                webClient.get()
+                        .uri("/loanapp/"+loanAppId)
+                        .retrieve()
+                        .bodyToMono(LoanAppApi.GetResponse.class)
+                        .block(timeout);
+
+        assertEquals(LoanAppDomainStatus.STATUS_DECLINED,getRes.state().status());
 
 
     }
