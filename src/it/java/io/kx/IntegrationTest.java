@@ -214,6 +214,4 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
 
     }
 
-
-
 }
