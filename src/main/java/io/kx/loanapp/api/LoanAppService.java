@@ -5,7 +5,8 @@ import io.kx.loanapp.domain.LoanAppDomainEvent;
 import io.kx.loanapp.domain.LoanAppDomainState;
 import kalix.javasdk.eventsourcedentity.EventSourcedEntity;
 import kalix.javasdk.eventsourcedentity.EventSourcedEntityContext;
-import kalix.springsdk.annotations.Entity;
+import kalix.springsdk.annotations.EntityKey;
+import kalix.springsdk.annotations.EntityType;
 import kalix.springsdk.annotations.EventHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,7 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.time.Instant;
 
-@Entity(entityKey = "loanAppId", entityType = "loanapp")
+@EntityKey("loanAppId")
+@EntityType("loanapp")
 @RequestMapping("/loanapp/{loanAppId}")
 public class LoanAppService extends EventSourcedEntity<LoanAppDomainState> {
 

@@ -35,14 +35,14 @@ In `pom.xml`:
 
 # Loan application service
 
-## Define persistence (domain) data structure  (GRPC)
+## Define persistence (domain) 
 1. Create package `io.kx.loanapp.doman`<br>
 2. Create Java interface `LoanAppDomainEvent` and add Java records for events `Submitted`, `Approved`, `Declined`
 3. Create `LoanAppDomainStatus` enum
 4. Create file `LoanAppDomainState` with `empty`, `onSubmitted`, `onApproved` and `onDeclined` methods
 <i><b>Tip</b></i>: Check content in `step-1` git branch
 
-## Define API data structure and endpoints (GRPC)
+## Define API data structure and endpoints
 1. Create package `io.kx.loanapp.api`<br>
 2. Create sealed interface `LoanAppApi` and add Java records for requests and responses 
 3. Create class `LoanAppService` extending `EventSourcedEntity<LoanAppDomainState>`
@@ -314,12 +314,12 @@ mvn deploy
 
 Submit loan application:
 ```
-`curl -XPOST -d '{
+curl -XPOST -d '{
   "clientId": "12345",
   "clientMonthlyIncomeCents": 60000,
   "loanAmountCents": 20000,
   "loanDurationMonths": 12
-}' https://<somehost>.kalix.app/loanapp/3/submit -H "Content-Type: application/json"`
+}' https://<somehost>.kalix.app/loanapp/3/submit -H "Content-Type: application/json"
 ```
 Check loan processing status:
 ```
