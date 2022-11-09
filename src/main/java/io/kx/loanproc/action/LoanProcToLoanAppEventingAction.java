@@ -34,7 +34,7 @@ public class LoanProcToLoanAppEventingAction extends Action {
 
     public Effect<LoanProcApi.EmptyResponse> onDeclined(LoanProcDomainEvent.Declined event){
         CompletionStage<LoanProcApi.EmptyResponse> processRes =
-                kalixClient.post("/loanapp/"+event.loanAppId()+"/decline",LoanAppApi.EmptyResponse.class).execute()
+                kalixClient.post("/loanapp/"+event.loanAppId()+"/decline",new LoanAppApi.DeclineRequest(event.reason()),LoanAppApi.EmptyResponse.class).execute()
                         .thenApply(res -> LoanProcApi.EmptyResponse.of());
 
         return effects().asyncReply(processRes);
