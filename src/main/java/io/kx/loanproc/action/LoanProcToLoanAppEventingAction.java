@@ -31,7 +31,7 @@ public class LoanProcToLoanAppEventingAction extends Action {
                 kalixClient.post("/loanapp/"+event.loanAppId()+"/approve",LoanAppApi.EmptyResponse.class).execute()
                         .thenApply(res -> LoanProcApi.EmptyResponse.of())
                         .exceptionally(e -> {
-                            if(e.getCause() instanceof WebClientResponseException && ((WebClientResponseException)e.getCause()).getStatusCode() == HttpStatus.NOT_FOUND){
+                            if(e.getCause() instanceof WebClientResponseException && ((WebClientResponseException)e.getCause()).getStatusCode() == HttpStatus.NOT_FOUND || ((WebClientResponseException)e.getCause()).getStatusCode() == HttpStatus.BAD_REQUEST){
                                 //ignore if not found to not block
                                 return LoanProcApi.EmptyResponse.of();
                             } else {
@@ -47,7 +47,7 @@ public class LoanProcToLoanAppEventingAction extends Action {
                 kalixClient.post("/loanapp/"+event.loanAppId()+"/decline",new LoanAppApi.DeclineRequest(event.reason()),LoanAppApi.EmptyResponse.class).execute()
                         .thenApply(res -> LoanProcApi.EmptyResponse.of())
                         .exceptionally(e -> {
-                            if(e.getCause() instanceof WebClientResponseException && ((WebClientResponseException)e.getCause()).getStatusCode() == HttpStatus.NOT_FOUND){
+                            if(e.getCause() instanceof WebClientResponseException && (((WebClientResponseException)e.getCause()).getStatusCode() == HttpStatus.NOT_FOUND || ((WebClientResponseException)e.getCause()).getStatusCode() == HttpStatus.BAD_REQUEST)){
                                 //ignore if not found to not block
                                 return LoanProcApi.EmptyResponse.of();
                             } else {

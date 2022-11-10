@@ -9,6 +9,7 @@ import kalix.springsdk.annotations.Subscribe;
 import kalix.springsdk.annotations.Table;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import reactor.core.publisher.Flux;
 
 @Table("loanproc_by_status")
 public class LoanProcByStatusView extends View<LoanProcViewModel.ViewRecord>
@@ -17,7 +18,7 @@ public class LoanProcByStatusView extends View<LoanProcViewModel.ViewRecord>
 
     @PostMapping("/loanproc/views/by-status")
     @Query("SELECT * FROM loanproc_by_status WHERE statusId = :statusId")
-    public LoanProcViewModel.ViewRecord getLoanProcByStatus(@RequestBody LoanProcViewModel.ViewRequest request){
+    public Flux<LoanProcViewModel.ViewRecord> getLoanProcByStatus(@RequestBody LoanProcViewModel.ViewRequest request){
         return null;
     }
 

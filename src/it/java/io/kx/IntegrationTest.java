@@ -18,13 +18,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Main.class)
@@ -114,24 +117,27 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
         //views are eventually consistent
         Thread.sleep(2000);
         logger.info("Checking view...");
-        LoanProcViewModel.ViewRecord viewRes =
-                webClient.post()
-                        .uri("/loanproc/views/by-status")
-                        .bodyValue(new LoanProcViewModel.ViewRequest(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name()))
-                        .retrieve()
-                        .bodyToMono(LoanProcViewModel.ViewRecord.class)
-                        .block(timeout);
 
-        assertEquals(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name(),viewRes.statusId());
+        List<LoanProcViewModel.ViewRecord> viewResList =
+        webClient.post()
+                .uri("/loanproc/views/by-status")
+                .bodyValue(new LoanProcViewModel.ViewRequest(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name()))
+                .retrieve()
+                .bodyToFlux(LoanProcViewModel.ViewRecord.class)
+                .collectList().block(timeout);
+
+        assertEquals(1,viewResList.size());
+        assertTrue(viewResList.stream().filter(vr -> vr.loanAppId().equals(loanAppId)).findFirst().isPresent());
+
 
         logger.info("Sending approve...");
         emptyRes =
-                webClient.post()
-                        .uri("/loanproc/"+loanAppId+"/approve")
-                        .bodyValue(new LoanProcApi.ApproveRequest(reviewerId))
-                        .retrieve()
-                        .toEntity(LoanProcApi.EmptyResponse.class)
-                        .block(timeout);
+        webClient.post()
+                .uri("/loanproc/"+loanAppId+"/approve")
+                .bodyValue(new LoanProcApi.ApproveRequest(reviewerId))
+                .retrieve()
+                .toEntity(LoanProcApi.EmptyResponse.class)
+                .block(timeout);
 
         logger.info("Sending get...");
         getRes =
@@ -144,14 +150,15 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
         assertEquals(LoanProcDomainStatus.STATUS_APPROVED,getRes.state().status());
 
 
-        ClientResponse emptyViewRes =
+        viewResList =
                 webClient.post()
                         .uri("/loanproc/views/by-status")
                         .bodyValue(new LoanProcViewModel.ViewRequest(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name()))
-                        .exchangeToMono(Mono::just)
-                        .block(timeout);
+                        .retrieve()
+                        .bodyToFlux(LoanProcViewModel.ViewRecord.class)
+                        .collectList().block(timeout);
 
-        assertEquals(HttpStatus.NOT_FOUND,emptyViewRes.statusCode());
+        assertEquals(0,viewResList.size());
     }
 
 
@@ -179,16 +186,17 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
 
         //views are eventually consistent
         Thread.sleep(2000);
-        logger.info("Checking loan proc view for STATUS_READY_FOR_REVIEW...");
-        LoanProcViewModel.ViewRecord viewLpRes =
+
+        List<LoanProcViewModel.ViewRecord> viewResList =
                 webClient.post()
                         .uri("/loanproc/views/by-status")
                         .bodyValue(new LoanProcViewModel.ViewRequest(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name()))
                         .retrieve()
-                        .bodyToMono(LoanProcViewModel.ViewRecord.class)
-                        .block(timeout);
+                        .bodyToFlux(LoanProcViewModel.ViewRecord.class)
+                        .collectList().block(timeout);
 
-        assertEquals(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name(),viewLpRes.statusId());
+        assertTrue(!viewResList.isEmpty());
+        assertTrue(viewResList.stream().filter(vr -> vr.loanAppId().equals(loanAppId)).findFirst().isPresent());
 
 
         logger.info("Sending loan proc approve...");
@@ -241,15 +249,16 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
         //views are eventually consistent
         Thread.sleep(2000);
         logger.info("Checking loan proc view for STATUS_READY_FOR_REVIEW...");
-        LoanProcViewModel.ViewRecord viewLpRes =
+        List<LoanProcViewModel.ViewRecord> viewResList =
                 webClient.post()
                         .uri("/loanproc/views/by-status")
                         .bodyValue(new LoanProcViewModel.ViewRequest(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name()))
                         .retrieve()
-                        .bodyToMono(LoanProcViewModel.ViewRecord.class)
-                        .block(timeout);
+                        .bodyToFlux(LoanProcViewModel.ViewRecord.class)
+                        .collectList().block(timeout);
 
-        assertEquals(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name(),viewLpRes.statusId());
+        assertTrue(!viewResList.isEmpty());
+        assertTrue(viewResList.stream().filter(vr -> vr.loanAppId().equals(loanAppId)).findFirst().isPresent());
 
 
         logger.info("Sending loan proc decline...");
@@ -302,15 +311,17 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
         //views are eventually consistent
         Thread.sleep(2000);
         logger.info("Checking loan proc view for STATUS_READY_FOR_REVIEW...");
-        LoanProcViewModel.ViewRecord viewLpRes =
+
+        List<LoanProcViewModel.ViewRecord> viewResList =
                 webClient.post()
                         .uri("/loanproc/views/by-status")
                         .bodyValue(new LoanProcViewModel.ViewRequest(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name()))
                         .retrieve()
-                        .bodyToMono(LoanProcViewModel.ViewRecord.class)
-                        .block(timeout);
+                        .bodyToFlux(LoanProcViewModel.ViewRecord.class)
+                        .collectList().block(timeout);
 
-        assertEquals(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW.name(),viewLpRes.statusId());
+        assertTrue(!viewResList.isEmpty());
+        assertTrue(viewResList.stream().filter(vr -> vr.loanAppId().equals(loanAppId)).findFirst().isPresent());
 
 
         //Waiting for timeout and decline
