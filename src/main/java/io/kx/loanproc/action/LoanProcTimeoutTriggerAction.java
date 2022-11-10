@@ -1,6 +1,7 @@
-package io.kx.loanproc.trigger;
+package io.kx.loanproc.action;
 
 import io.kx.loanapp.api.LoanAppApi;
+import io.kx.loanproc.LoanProcConfig;
 import io.kx.loanproc.api.LoanProcApi;
 import io.kx.loanproc.api.LoanProcService;
 import io.kx.loanproc.domain.LoanProcDomainEvent;
@@ -19,15 +20,17 @@ public class LoanProcTimeoutTriggerAction extends Action {
     private final Logger logger = LoggerFactory.getLogger(LoanProcTimeoutTriggerAction.class);
     public static final int defaultTimeoutMillis = 2000;
     private final KalixClient kalixClient;
+    private final LoanProcConfig config;
 
-    public LoanProcTimeoutTriggerAction(KalixClient kalixClient) {
+    public LoanProcTimeoutTriggerAction(KalixClient kalixClient, LoanProcConfig config) {
         this.kalixClient = kalixClient;
+        this.config = config;
     }
 
     public Action.Effect<LoanAppApi.EmptyResponse> onReadyForReview(LoanProcDomainEvent.ReadyForReview event){
         logger.info("onReadyForReview: {}",event.loanAppId());
         var deferredCall = kalixClient.post("/loanproc/"+event.loanAppId()+"/decline",new LoanProcApi.DeclineRequest("SYSTEM", "timeout by timer"),LoanProcApi.EmptyResponse.class);
-        timers().startSingleTimer(getTimerName(event.loanAppId()), Duration.ofMillis(getTimeoutMillis()),deferredCall);
+        timers().startSingleTimer(getTimerName(event.loanAppId()), Duration.ofMillis(config.getTimeoutMillis()),deferredCall);
         return effects().reply(LoanAppApi.EmptyResponse.of());
     }
 
@@ -41,15 +44,15 @@ public class LoanProcTimeoutTriggerAction extends Action {
         timers().cancel(getTimerName(event.loanAppId()));
         return effects().reply(LoanAppApi.EmptyResponse.of());
     }
-
-    private int getTimeoutMillis(){
-        String timeoutMillis = System.getenv("LOAN_PROC_TIMEOUT_MILLIS");
-        try {
-            return StringUtils.hasLength(timeoutMillis) ? Integer.parseInt(timeoutMillis) : defaultTimeoutMillis;
-        }catch(NumberFormatException e){
-            return defaultTimeoutMillis;
-        }
-    }
+//
+//    private int getTimeoutMillis(){
+//        String timeoutMillis = System.getenv("LOAN_PROC_TIMEOUT_MILLIS");
+//        try {
+//            return StringUtils.hasLength(timeoutMillis) ? Integer.parseInt(timeoutMillis) : defaultTimeoutMillis;
+//        }catch(NumberFormatException e){
+//            return defaultTimeoutMillis;
+//        }
+//    }
 
     private String getTimerName(String loanAppId){
         return "timeout-"+loanAppId;

@@ -4,7 +4,7 @@ import io.kx.loanapp.api.LoanAppApi;
 import io.kx.loanapp.domain.LoanAppDomainStatus;
 import io.kx.loanproc.api.LoanProcApi;
 import io.kx.loanproc.domain.LoanProcDomainStatus;
-import io.kx.loanproc.trigger.LoanProcTimeoutTriggerAction;
+import io.kx.loanproc.action.LoanProcTimeoutTriggerAction;
 import io.kx.loanproc.view.LoanProcViewModel;
 import kalix.springsdk.testkit.KalixIntegrationTestKitSupport;
 import org.junit.jupiter.api.Test;
@@ -262,7 +262,7 @@ public class IntegrationTest extends KalixIntegrationTestKitSupport {
                         .block(timeout);
 
         //eventing is eventually consistent
-        Thread.sleep(2000);
+        Thread.sleep(4000);
 
         logger.info("Sending get on loan app...");
         LoanAppApi.GetResponse getRes =
