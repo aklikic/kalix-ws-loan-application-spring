@@ -8,6 +8,8 @@ import kalix.javasdk.action.Action;
 import kalix.javasdk.action.ActionCreationContext;
 import kalix.springsdk.KalixClient;
 import kalix.springsdk.annotations.Subscribe;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.concurrent.CompletionStage;
 
@@ -25,7 +27,15 @@ public class LoanAppToLoanProcEventingAction extends Action {
     public Action.Effect<LoanAppApi.EmptyResponse> onSubmitted(LoanAppDomainEvent.Submitted event){
         CompletionStage<LoanAppApi.EmptyResponse> processRes =
                 kalixClient.post("/loanproc/"+event.loanAppId()+"/process",LoanProcApi.EmptyResponse.class).execute()
-                        .thenApply(res -> LoanAppApi.EmptyResponse.of());
+                        .thenApply(res -> LoanAppApi.EmptyResponse.of())
+                        .exceptionally(e -> {
+                            if(e.getCause() instanceof WebClientResponseException && ((WebClientResponseException)e.getCause()).getStatusCode() == HttpStatus.NOT_FOUND){
+                                //ignore if not found to not block
+                                return LoanAppApi.EmptyResponse.of();
+                            } else {
+                                throw (RuntimeException)e;
+                            }
+                        });
 
         return effects().asyncReply(processRes);
     }
