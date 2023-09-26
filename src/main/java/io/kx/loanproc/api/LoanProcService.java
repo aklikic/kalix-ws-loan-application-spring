@@ -3,11 +3,12 @@ package io.kx.loanproc.api;
 import io.grpc.Status;
 import io.kx.loanproc.domain.LoanProcDomainEvent;
 import io.kx.loanproc.domain.LoanProcDomainState;
+import kalix.javasdk.annotations.EventHandler;
+import kalix.javasdk.annotations.Id;
+import kalix.javasdk.annotations.TypeId;
+import kalix.javasdk.annotations.TypeName;
 import kalix.javasdk.eventsourcedentity.EventSourcedEntity;
 import kalix.javasdk.eventsourcedentity.EventSourcedEntityContext;
-import kalix.springsdk.annotations.EntityKey;
-import kalix.springsdk.annotations.EntityType;
-import kalix.springsdk.annotations.EventHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.time.Instant;
 
-@EntityKey("loanAppId")
-@EntityType("loanproc")
+@Id("loanAppId")
+@TypeId("loanAppId")
 @RequestMapping("/loanproc/{loanAppId}")
-public class LoanProcService extends EventSourcedEntity<LoanProcDomainState> {
+public class LoanProcService extends EventSourcedEntity<LoanProcDomainState, LoanProcDomainEvent> {
 
     private final String loanAppId;
 

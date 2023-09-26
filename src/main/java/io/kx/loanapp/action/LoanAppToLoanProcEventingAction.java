@@ -4,39 +4,40 @@ import io.kx.loanapp.api.LoanAppApi;
 import io.kx.loanapp.api.LoanAppService;
 import io.kx.loanapp.domain.LoanAppDomainEvent;
 import io.kx.loanproc.api.LoanProcApi;
+import io.kx.loanproc.api.LoanProcService;
 import kalix.javasdk.action.Action;
 import kalix.javasdk.action.ActionCreationContext;
-import kalix.springsdk.KalixClient;
-import kalix.springsdk.annotations.Subscribe;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-
-import java.util.concurrent.CompletionStage;
+import kalix.javasdk.annotations.Subscribe;
+import kalix.javasdk.client.ComponentClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Subscribe.EventSourcedEntity(value = LoanAppService.class, ignoreUnknown = true)
 public class LoanAppToLoanProcEventingAction extends Action {
 
-    private final ActionCreationContext ctx;
-    private final KalixClient kalixClient;
+    private Logger logger = LoggerFactory.getLogger(LoanAppToLoanProcEventingAction.class);
 
-    public LoanAppToLoanProcEventingAction(ActionCreationContext ctx, KalixClient kalixClient) {
+
+    private final ActionCreationContext ctx;
+
+    private final ComponentClient componentClient;
+
+    public LoanAppToLoanProcEventingAction(ActionCreationContext ctx, ComponentClient componentClient) {
+        this.componentClient = componentClient;
         this.ctx = ctx;
-        this.kalixClient = kalixClient;
     }
 
-    public Action.Effect<LoanAppApi.EmptyResponse> onSubmitted(LoanAppDomainEvent.Submitted event){
-        CompletionStage<LoanAppApi.EmptyResponse> processRes =
-                kalixClient.post("/loanproc/"+event.loanAppId()+"/process",LoanProcApi.EmptyResponse.class).execute()
-                        .thenApply(res -> LoanAppApi.EmptyResponse.of())
-                        .exceptionally(e -> {
-                            if(e.getCause() instanceof WebClientResponseException && ((WebClientResponseException)e.getCause()).getStatusCode() == HttpStatus.NOT_FOUND){
-                                //ignore if not found to not block
-                                return LoanAppApi.EmptyResponse.of();
-                            } else {
-                                throw (RuntimeException)e;
-                            }
-                        });
+    public Action.Effect<LoanAppApi.EmptyResponse> onSubmitted(LoanAppDomainEvent.Submitted event) {
+        logger.info("+++++++++++++++++++++++++");
+        logger.info("eventId : " + event.loanAppId());
+        logger.info("+++++++++++++++++++++++++");
 
-        return effects().asyncReply(processRes);
+        return effects().asyncReply(
+                componentClient
+                        .forEventSourcedEntity(event.loanAppId())
+                        .call(LoanProcService::process)
+                        .execute()
+                        .thenApply(__ -> LoanAppApi.EmptyResponse.of())
+        );
     }
 }

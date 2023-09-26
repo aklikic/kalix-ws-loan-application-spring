@@ -2,6 +2,7 @@ package io.kx.loanapp.domain;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import kalix.javasdk.annotations.TypeName;
 
 import java.time.Instant;
 
@@ -13,6 +14,8 @@ import java.time.Instant;
                 @JsonSubTypes.Type(value = LoanAppDomainEvent.Declined.class, name = "declined")
         })
 public sealed interface LoanAppDomainEvent {
+
+    @TypeName("loan-submitted")
     record Submitted(String loanAppId,
                      String clientId,
                      Integer clientMonthlyIncomeCents,
@@ -20,6 +23,10 @@ public sealed interface LoanAppDomainEvent {
                      Integer loanDurationMonths,
                      Instant timestamp) implements LoanAppDomainEvent{}
 
+
+    @TypeName("loan-approved")
     record Approved(String loanAppId, Instant timestamp) implements LoanAppDomainEvent{}
+
+    @TypeName("loan-declined")
     record Declined(String loanAppId, String reason, Instant timestamp) implements LoanAppDomainEvent{}
 }

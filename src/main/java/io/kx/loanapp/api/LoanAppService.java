@@ -3,11 +3,11 @@ package io.kx.loanapp.api;
 import io.grpc.Status;
 import io.kx.loanapp.domain.LoanAppDomainEvent;
 import io.kx.loanapp.domain.LoanAppDomainState;
+import kalix.javasdk.annotations.EventHandler;
+import kalix.javasdk.annotations.Id;
+import kalix.javasdk.annotations.TypeId;
 import kalix.javasdk.eventsourcedentity.EventSourcedEntity;
 import kalix.javasdk.eventsourcedentity.EventSourcedEntityContext;
-import kalix.springsdk.annotations.EntityKey;
-import kalix.springsdk.annotations.EntityType;
-import kalix.springsdk.annotations.EventHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,13 +15,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.time.Instant;
 
-@EntityKey("loanAppId")
-@EntityType("loanapp")
+@Id("loanAppId")
+@TypeId("loanapp")
 @RequestMapping("/loanapp/{loanAppId}")
-public class LoanAppService extends EventSourcedEntity<LoanAppDomainState> {
+public class LoanAppService extends EventSourcedEntity<LoanAppDomainState, LoanAppDomainEvent> {
 
     private final String loanAppId;
-
     public LoanAppService(EventSourcedEntityContext context) {
         this.loanAppId = context.entityId();
     }
@@ -34,8 +33,8 @@ public class LoanAppService extends EventSourcedEntity<LoanAppDomainState> {
 
     @PostMapping("/submit")
     public Effect<LoanAppApi.EmptyResponse> submit(@RequestBody LoanAppApi.SubmitRequest request){
-        switch (currentState().status()){
-            case STATUS_UNKNOWN:
+        switch (currentState().status()) {
+            case STATUS_UNKNOWN -> {
                 LoanAppDomainEvent.Submitted event =
                         new LoanAppDomainEvent.Submitted(
                                 loanAppId,
@@ -45,29 +44,32 @@ public class LoanAppService extends EventSourcedEntity<LoanAppDomainState> {
                                 request.loanDurationMonths(),
                                 Instant.now());
                 return effects().emitEvent(event).thenReply(newState -> LoanAppApi.EmptyResponse.of());
-
-            case STATUS_IN_REVIEW:
+            }
+            case STATUS_IN_REVIEW -> {
                 return effects().reply(LoanAppApi.EmptyResponse.of());
-            case STATUS_APPROVED:
-            case STATUS_DECLINED:
-            default:
+            }
+            default -> {
                 return effects().error("Wrong status", Status.Code.INVALID_ARGUMENT);
+            }
         }
     }
 
     @PostMapping("/approve")
     public Effect<LoanAppApi.EmptyResponse> approve(){
-        switch (currentState().status()){
-            case STATUS_UNKNOWN:
+        switch (currentState().status()) {
+            case STATUS_UNKNOWN -> {
                 return effects().error("Not found", Status.Code.NOT_FOUND);
-            case STATUS_IN_REVIEW:
-                LoanAppDomainEvent.Approved event = new LoanAppDomainEvent.Approved(loanAppId,Instant.now());
+            }
+            case STATUS_IN_REVIEW -> {
+                LoanAppDomainEvent.Approved event = new LoanAppDomainEvent.Approved(loanAppId, Instant.now());
                 return effects().emitEvent(event).thenReply(newState -> LoanAppApi.EmptyResponse.of());
-            case STATUS_APPROVED:
+            }
+            case STATUS_APPROVED -> {
                 return effects().reply(LoanAppApi.EmptyResponse.of());
-            case STATUS_DECLINED:
-            default:
+            }
+            default -> {
                 return effects().error("Wrong status", Status.Code.INVALID_ARGUMENT);
+            }
         }
 
 
@@ -75,17 +77,20 @@ public class LoanAppService extends EventSourcedEntity<LoanAppDomainState> {
 
     @PostMapping("/decline")
     public Effect<LoanAppApi.EmptyResponse> decline(@RequestBody LoanAppApi.DeclineRequest request){
-        switch (currentState().status()){
-            case STATUS_UNKNOWN:
+        switch (currentState().status()) {
+            case STATUS_UNKNOWN -> {
                 return effects().error("Not found", Status.Code.NOT_FOUND);
-            case STATUS_IN_REVIEW:
-                LoanAppDomainEvent.Declined event = new LoanAppDomainEvent.Declined(loanAppId,request.reason(),Instant.now());
+            }
+            case STATUS_IN_REVIEW -> {
+                LoanAppDomainEvent.Declined event = new LoanAppDomainEvent.Declined(loanAppId, request.reason(), Instant.now());
                 return effects().emitEvent(event).thenReply(newState -> LoanAppApi.EmptyResponse.of());
-            case STATUS_DECLINED:
+            }
+            case STATUS_DECLINED -> {
                 return effects().reply(LoanAppApi.EmptyResponse.of());
-            case STATUS_APPROVED:
-            default:
+            }
+            default -> {
                 return effects().error("Wrong status", Status.Code.INVALID_ARGUMENT);
+            }
         }
     }
 

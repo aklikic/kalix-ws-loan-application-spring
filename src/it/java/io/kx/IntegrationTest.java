@@ -6,7 +6,7 @@ import io.kx.loanproc.api.LoanProcApi;
 import io.kx.loanproc.domain.LoanProcDomainStatus;
 import io.kx.loanproc.action.LoanProcTimeoutTriggerAction;
 import io.kx.loanproc.view.LoanProcViewModel;
-import kalix.springsdk.testkit.KalixIntegrationTestKitSupport;
+import kalix.spring.testkit.KalixIntegrationTestKitSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;

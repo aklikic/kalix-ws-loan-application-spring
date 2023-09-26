@@ -1,60 +1,43 @@
 package io.kx.loanproc.action;
 
 import io.kx.loanapp.api.LoanAppApi;
+import io.kx.loanapp.api.LoanAppService;
 import io.kx.loanproc.api.LoanProcApi;
 import io.kx.loanproc.api.LoanProcService;
 import io.kx.loanproc.domain.LoanProcDomainEvent;
 import kalix.javasdk.action.Action;
 import kalix.javasdk.action.ActionCreationContext;
-import kalix.springsdk.KalixClient;
-import kalix.springsdk.annotations.Subscribe;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-
-import java.util.concurrent.CompletionStage;
+import kalix.javasdk.annotations.Subscribe;
+import kalix.javasdk.client.ComponentClient;
 
 @Subscribe.EventSourcedEntity(value = LoanProcService.class, ignoreUnknown = true)
 public class LoanProcToLoanAppEventingAction extends Action {
 
     private final ActionCreationContext ctx;
-    private final KalixClient kalixClient;
+    private final ComponentClient componentClient;
 
-    @Autowired
-    public LoanProcToLoanAppEventingAction(ActionCreationContext ctx, KalixClient kalixClient) {
+    public LoanProcToLoanAppEventingAction(ActionCreationContext ctx, ComponentClient componentClient) {
         this.ctx = ctx;
-        this.kalixClient = kalixClient;
+        this.componentClient = componentClient;
     }
 
     public Effect<LoanProcApi.EmptyResponse> onApproved(LoanProcDomainEvent.Approved event){
-        CompletionStage<LoanProcApi.EmptyResponse> processRes =
-                kalixClient.post("/loanapp/"+event.loanAppId()+"/approve",LoanAppApi.EmptyResponse.class).execute()
-                        .thenApply(res -> LoanProcApi.EmptyResponse.of())
-                        .exceptionally(e -> {
-                            if(e.getCause() instanceof WebClientResponseException && ((WebClientResponseException)e.getCause()).getStatusCode() == HttpStatus.NOT_FOUND || ((WebClientResponseException)e.getCause()).getStatusCode() == HttpStatus.BAD_REQUEST){
-                                //ignore if not found to not block
-                                return LoanProcApi.EmptyResponse.of();
-                            } else {
-                                throw (RuntimeException)e;
-                            }
-                        });
-
-        return effects().asyncReply(processRes);
+        return effects().asyncReply(
+                componentClient
+                        .forEventSourcedEntity(event.loanAppId())
+                        .call(LoanAppService::approve)
+                        .execute()
+                        .thenApply(__ -> LoanProcApi.EmptyResponse.of())
+        );
     }
 
     public Effect<LoanProcApi.EmptyResponse> onDeclined(LoanProcDomainEvent.Declined event){
-        CompletionStage<LoanProcApi.EmptyResponse> processRes =
-                kalixClient.post("/loanapp/"+event.loanAppId()+"/decline",new LoanAppApi.DeclineRequest(event.reason()),LoanAppApi.EmptyResponse.class).execute()
-                        .thenApply(res -> LoanProcApi.EmptyResponse.of())
-                        .exceptionally(e -> {
-                            if(e.getCause() instanceof WebClientResponseException && (((WebClientResponseException)e.getCause()).getStatusCode() == HttpStatus.NOT_FOUND || ((WebClientResponseException)e.getCause()).getStatusCode() == HttpStatus.BAD_REQUEST)){
-                                //ignore if not found to not block
-                                return LoanProcApi.EmptyResponse.of();
-                            } else {
-                                throw (RuntimeException)e;
-                            }
-                        });
-
-        return effects().asyncReply(processRes);
+        return effects().asyncReply(
+                componentClient
+                        .forEventSourcedEntity(event.loanAppId())
+                        .call(LoanAppService::decline).params(new LoanAppApi.DeclineRequest(event.reason()))
+                        .execute()
+                        .thenApply(__ -> LoanProcApi.EmptyResponse.of())
+        );
     }
 }

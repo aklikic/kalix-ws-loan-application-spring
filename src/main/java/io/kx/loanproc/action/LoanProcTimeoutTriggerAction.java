@@ -6,11 +6,10 @@ import io.kx.loanproc.api.LoanProcApi;
 import io.kx.loanproc.api.LoanProcService;
 import io.kx.loanproc.domain.LoanProcDomainEvent;
 import kalix.javasdk.action.Action;
-import kalix.springsdk.KalixClient;
-import kalix.springsdk.annotations.Subscribe;
+import kalix.javasdk.annotations.Subscribe;
+import kalix.javasdk.client.ComponentClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 
@@ -19,18 +18,22 @@ public class LoanProcTimeoutTriggerAction extends Action {
 
     private final Logger logger = LoggerFactory.getLogger(LoanProcTimeoutTriggerAction.class);
     public static final int defaultTimeoutMillis = 2000;
-    private final KalixClient kalixClient;
+    private final ComponentClient componentClient;
     private final LoanProcConfig config;
 
-    public LoanProcTimeoutTriggerAction(KalixClient kalixClient, LoanProcConfig config) {
-        this.kalixClient = kalixClient;
+    public LoanProcTimeoutTriggerAction(ComponentClient componentClient, LoanProcConfig config) {
+        this.componentClient = componentClient;
         this.config = config;
     }
 
     public Action.Effect<LoanAppApi.EmptyResponse> onReadyForReview(LoanProcDomainEvent.ReadyForReview event){
         logger.info("onReadyForReview: {}",event.loanAppId());
-        var deferredCall = kalixClient.post("/loanproc/"+event.loanAppId()+"/decline",new LoanProcApi.DeclineRequest("SYSTEM", "timeout by timer"),LoanProcApi.EmptyResponse.class);
-        timers().startSingleTimer(getTimerName(event.loanAppId()), Duration.ofMillis(config.getTimeoutMillis()),deferredCall);
+        var deferredCall = componentClient
+                .forEventSourcedEntity(event.loanAppId())
+                .call(LoanProcService::decline).params(new LoanProcApi.DeclineRequest("SYSTEM", "timeout by timer"));
+        timers().startSingleTimer(getTimerName(event.loanAppId()),
+                Duration.ofMillis(config.getTimeoutMillis()),
+                deferredCall);
         return effects().reply(LoanAppApi.EmptyResponse.of());
     }
 
