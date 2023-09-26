@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.1.0</version>
+    <relativePath/>
+  </parent>
   <groupId>io.kx</groupId>
   <artifactId>loan-application-spring</artifactId>
   <version>1.0-SNAPSHOT</version>
@@ -12,23 +17,19 @@
 
     <!-- TODO Update to your own Docker repository or Docker Hub scope -->
     <dockerImage>aklikic/${project.artifactId}</dockerImage>
-    <dockerTag>${project.version}-${build.timestamp}</dockerTag>
+    <dockerTag>${project.version}</dockerTag>
     <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
     <mainClass>io.kx.Main</mainClass>
 
     <jdk.target>17</jdk.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <kalix-sdk.version>1.0.11</kalix-sdk.version>
-    <akka-grpc.version>2.1.4</akka-grpc.version>
+    <kalix-sdk.version>1.3.3</kalix-sdk.version>
+<!--    <akka-grpc.version>2.1.4</akka-grpc.version>-->
   </properties>
 
   <build>
     <resources>
-      <!-- Add the generated protobuf descriptor to the classpath, so that source mapping works -->
-      <resource>
-        <directory>${project.build.directory}/generated-resources</directory>
-      </resource>
       <resource>
         <directory>src/main/resources</directory>
       </resource>
@@ -41,6 +42,30 @@
         <version>1.7.0</version>
       </extension>
     </extensions>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <executions>
+            <execution>
+              <phase>package</phase>
+              <goals>
+                <goal>shade</goal>
+              </goals>
+              <configuration>
+                <transformers combine.children="append">
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                    <resource>reference.conf</resource>
+                  </transformer>
+                </transformers>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
 
     <plugins>
       <plugin>
@@ -55,30 +80,6 @@
             <arg>-parameters</arg>
           </compilerArgs>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>2.1</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                  <resource>reference.conf</resource>
-                </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>${mainClass}</mainClass>
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
@@ -119,7 +120,7 @@
         <executions>
           <execution>
             <id>build-docker-image</id>
-            <phase>package</phase>
+            <phase>install</phase>
             <goals>
               <goal>build</goal>
             </goals>
@@ -135,35 +136,9 @@
       </plugin>
 
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>3.0.0</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <executable>java</executable>
-          <arguments>
-            <argument>-classpath</argument>
-            <classpath/>
-            <argument>${mainClass}</argument>
-          </arguments>
-          <environmentVariables>
-            <!-- needed for the proxy to access the user function on all platforms -->
-            <HOST>0.0.0.0</HOST>
-          </environmentVariables>
-        </configuration>
-      </plugin>
-
-      <plugin>
         <!-- configure src/it/java and src/it/resources -->
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.2.0</version>
         <executions>
           <execution>
             <id>add-integration-test-source</id>
@@ -197,7 +172,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.22.2</version>
         <configuration>
           <excludes>
             <!-- ignore integration test classes -->
@@ -207,13 +181,17 @@
       </plugin>
 
       <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+
+      <plugin>
         <groupId>io.kalix</groupId>
         <artifactId>kalix-maven-plugin</artifactId>
         <version>${kalix-sdk.version}</version>
         <executions>
           <execution>
             <goals>
-              <goal>generate</goal>
               <goal>deploy</goal>
             </goals>
           </execution>
@@ -221,13 +199,7 @@
         <configuration>
           <dockerImage>${dockerImage}:${dockerTag}</dockerImage>
           <mainClass>${mainClass}</mainClass>
-          <integrationTestSourceDirectory>src/it/java</integrationTestSourceDirectory>
         </configuration>
-      </plugin>
-      <plugin>
-       <groupId>org.springframework.boot</groupId>
-       <artifactId>spring-boot-maven-plugin</artifactId>
-       <version>2.7.4</version>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -273,36 +245,32 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.24</version>
+    </dependency>
+    <dependency>
       <groupId>io.kalix</groupId>
-      <artifactId>kalix-spring-sdk</artifactId>
+      <artifactId>kalix-spring-boot-starter</artifactId>
       <version>${kalix-sdk.version}</version>
     </dependency>
     <dependency>
       <groupId>io.kalix</groupId>
-      <artifactId>kalix-spring-sdk-testkit</artifactId>
+      <artifactId>kalix-spring-boot-starter-test</artifactId>
       <version>${kalix-sdk.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <version>2.7.0</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <version>5.5.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>5.5.2</version>
       <scope>test</scope>
     </dependency>
-    
+
   </dependencies>
 </project>
